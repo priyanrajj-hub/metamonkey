@@ -1177,7 +1177,7 @@
                         // SERVERLESS GEMINI FETCH (Secure Edge Endpoint)
                         let insight = "Diagnostic unavailable. Check server connection.";
                         const geminiPayload = {
-                            "contents": [{ "parts": [{ "text": `You are the Canopy AI Agricultural Analyst. I just scanned a farm polygon using OSINT proxies. The Mean NDVI is ${ndvi.toFixed(3)}. Provide a professional vegetation diagnosis. You MUST strictly use explicit hedging language (like 'estimated', 'likely', or 'based on vegetation patterns') when guessing pest risks or general NPK soil health, to ensure they are visually distinguished as AI estimates and not physical sensor measurements. Write exactly 2-3 concise plain-text sentences. DO NOT use markdown, HTML tags, or formatting characters.` }] }]
+                            "contents": [{ "parts": [{ "text": `You are the Canopy AI Agricultural Analyst. I just scanned a farm polygon using OSINT proxies. The Mean NDVI is ${ndvi.toFixed(3)}. Return your analysis STRICTLY as a JSON object with the following exact keys, and DO NOT wrap it in markdown code blocks: {"summary": "one sentence overview", "stress_severity": "Low | Moderate | High | Critical", "likely_crop_disease_or_pest_risk": "short estimated risk description", "npk_soil_health_estimate": "short estimated description", "confidence_caveat": "AI-estimated reasoning based on telemetry, not direct physical sensor measurement."}. You MUST use explicit hedging language ('estimated', 'likely', 'potential') in the risk and NPK fields.` }] }]
                         };
 
                         try {
@@ -1447,7 +1447,7 @@
 
                         layer.setStyle({ fillColor: statusColor, color: statusColor, fillOpacity: 0.5 });
                         console.log("SETTING_INSIGHT_TEXT =", insight);
-                        document.getElementById('p-insight').innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(insight, { ALLOWED_TAGS: ['em', 'strong', 'span', 'br'], ALLOWED_ATTR: ['style'] }) : insight;
+                        document.getElementById('p-insight').innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(insight, { ALLOWED_TAGS: ['em', 'strong', 'span', 'br', 'div'], ALLOWED_ATTR: ['style'] }) : insight;
 
                         // Dynamic confidence scoring based on data completeness
                         const confBadge = document.getElementById('confidence-badge');
