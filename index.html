@@ -1183,7 +1183,7 @@
                         try {
                             console.log("[CANOPY AI INSIGHT] Initiating Gemini API fetch...", geminiPayload);
                             const controller = new AbortController();
-                            const fetchTimeout = setTimeout(() => controller.abort(), 28000); // 12 seconds
+                            const fetchTimeout = setTimeout(() => controller.abort(), 35000); // 35 seconds
 
                             const gemRes = await fetch('/api/gemini', {
                                 method: 'POST',
@@ -1214,7 +1214,7 @@
                                 throw new Error(`Server returned HTTP ${gemRes.status}`);
                             }
                         } catch (e) {
-                            console.warn("[CANOPY AI INSIGHT] Fallback triggered. Reason:", e.name === 'AbortError' ? 'Fetch timeout after 12s' : e.message);
+                            console.warn("[CANOPY AI INSIGHT] Fallback triggered. Reason:", e.name === 'AbortError' ? 'Fetch timeout after 35s' : e.message);
                             window._canopyDebug.geminiFallback++;
 
                             // Use the locally computed ndvi (never null at this point)
