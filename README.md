@@ -10,21 +10,28 @@ Canopy is a browser-based vegetation monitoring dashboard that combines OpenStre
 ## ⚠️ Data Source Transparency
 
 | Feature | Data Source | Status |
-|---------|-----------|--------|
+| --------- | ----------- | -------- |
 | **NDVI Value** | OSM land-use tags via Overpass API | **Proxy** — not satellite multispectral. Maps `farmland`→0.72, `building`→0.12, etc. |
 | **Temperature, Humidity, UV** | Open-Meteo Forecast API | **Live** — real data for polygon centroid |
 | **14-day Rainfall** | Open-Meteo Forecast API | **Live** — real precipitation history |
 | **Rainfall Baseline** | Open-Meteo Archive API (same window last year) | **Live** — real location-specific norm |
-| **Pest Risk / Irrigation**| Rule engine on live weather + proxy NDVI | **Heuristic** — thresholds not validated against pest incidence data |
+| **Pest Risk / Irrigation** | Rule engine on live weather + proxy NDVI | **Heuristic** — thresholds not validated against pest incidence data |
 | **Temporal Δ Change** | Deterministic coord-hash offset | **Simulated** — requires Sentinel Hub API for real time series |
 | **AI Narrative** | Gemini 1.5 Flash (via `/api/gemini`) | **Live** when configured. |
 | **7-day NDVI Trend** | Simulated walk from current proxy NDVI | **Simulated** — no historical NDVI data source |
 
 ### What Would Make NDVI Real?
+
 To get actual satellite-derived NDVI, you need credentials for one of:
+
 - **Sentinel Hub** (ESA Copernicus) — free tier available, requires OAuth2 flow
 - **NASA MODIS/VIIRS** (AppEEARS API) — free, but data is coarse
 - **Google Earth Engine** — free for research, requires approved account
+
+## 🚀 Roadmap / Future Improvements
+
+- **Authenticated Sentinel Hub Access:** Replace the current OSINT NDVI fallback logic with live Sentinel Hub REST API integration. This requires adding a valid `SENTINEL_HUB_SECRET` to the Vercel backend and handling ESA OAuth2 token renewal logic.
+- **Historical Time-Series Fetch:** Rather than simulating the 7-day NDVI trend, fetch true historical multispectral arrays through the Sentinel Hub Statistical API.
 
 ## 🏗 Architecture
 
@@ -63,6 +70,7 @@ node server.js
 ## 🧪 Smoke Testing
 
 Run the included smoke test to verify API routes and external fetch stability:
+
 ```bash
 node test_smoke.js
 ```

@@ -11,6 +11,15 @@
     <!-- Globe.gl (bundles Three.js internally — no separate Three.js import needed) -->
     <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.32.1/dist/globe.gl.min.js"></script>
 
+    <!-- Intercept and suppress specific Three.js globe.gl deprecation warning -->
+    <script>
+        const originalWarn = console.warn;
+        console.warn = function (...args) {
+            if (args[0] && typeof args[0] === 'string' && args[0].includes('.useLegacyLights')) return;
+            originalWarn.apply(console, args);
+        };
+    </script>
+
     <!-- Leaflet & Leaflet Draw (Used as Free Google Maps Engine) -->
     <script>
         let selectedLat = 13.2619;
@@ -951,6 +960,16 @@
                                 sen.style.color = '#8a7a63';
                             }
                         }
+
+                        // Admin-only setup warning
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if (urlParams.get('admin') === 'true' || urlParams.get('dev') === 'true') {
+                            if (!data.integrations || !data.integrations.gemini_api || !data.integrations.gemini_api.configured) {
+                                setTimeout(() => {
+                                    alert("ADMIN WARNING: AI insights unavailable. Please configure GEMINI_API_KEY in Vercel Deployment Settings to enable live LLM integration.");
+                                }, 1000);
+                            }
+                        }
                     } catch (err) { }
                 })
                 .catch(e => {
@@ -1509,6 +1528,7 @@
                         borderColor: 'rgba(255, 230, 200, 0.7)',
                         backgroundColor: 'rgba(255, 230, 200, 0.1)',
                         borderWidth: 1.5,
+                        borderDash: [5, 5],
                         pointRadius: 2,
                         tension: 0.3
                     }]
