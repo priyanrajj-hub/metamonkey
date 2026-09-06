@@ -1198,8 +1198,10 @@
                             if (gemRes.ok) {
                                 const gemData = await gemRes.json();
                                 console.log("[CANOPY AI INSIGHT] Successful response:", gemData);
-                                if (gemData && gemData.candidates) {
-                                    insight = gemData.candidates[0].content.parts[0].text;
+                                console.log("[CANOPY AI INSIGHT] RAW STRUCTURE:", JSON.stringify(gemData, null, 2));
+                                if (gemData && (gemData.text || gemData.candidates)) {
+                                    // Support both modern flattened payload (.text) and legacy array traversal (.candidates)
+                                    insight = gemData.text ? gemData.text : gemData.candidates[0].content.parts[0].text;
                                     window._canopyDebug.geminiSuccess++;
                                     // Strip any accidental HTML tags from LLM output
                                     insight = insight.replace(/<[^>]*>/g, '');
@@ -1208,6 +1210,10 @@
                                     console.error("[CANOPY AI INSIGHT] API returned error block:", gemData.error);
                                     insight = "AI insight unavailable — " + (gemData.error.message || "Unknown API error");
                                     throw new Error(insight);
+                                } else {
+                                    const errMsg = "Cannot process response structure, expected 'text' parameter.";
+                                    console.error("[CANOPY AI INSIGHT] PARSING ERROR:", errMsg, "Raw data:", gemData);
+                                    throw new Error(errMsg);
                                 }
                             } else {
                                 const errText = await gemRes.text();
