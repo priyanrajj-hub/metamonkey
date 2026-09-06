@@ -51,11 +51,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
-
-    <!-- TF.js & MobileNet (Edge On-Device ML Proxy) -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+    
 
 
     <style>
@@ -1084,12 +1080,13 @@
                     const badge = document.getElementById('p-badge');
                     badge.className = 'health-badge loading-skeleton';
                     document.getElementById('p-badge-text').textContent = "Fetching Live Data...";
-                    document.getElementById('p-ndvi').textContent = "—";
-                    document.getElementById('p-temp').textContent = "—";
-                    document.getElementById('p-sun').textContent = "—";
-                    document.getElementById('p-uv').textContent = "—";
-                    document.getElementById('p-humidity').textContent = "—";
-                    document.getElementById('p-source').textContent = "—";
+                    const skeleton = '<span class="loading-skeleton" style="width:50px;height:12px;display:inline-block;border-radius:4px;"></span>';
+                    document.getElementById('p-ndvi').innerHTML = skeleton;
+                    document.getElementById('p-temp').innerHTML = skeleton;
+                    document.getElementById('p-sun').innerHTML = skeleton;
+                    document.getElementById('p-uv').innerHTML = skeleton;
+                    document.getElementById('p-humidity').innerHTML = skeleton;
+                    document.getElementById('p-source').innerHTML = skeleton;
                     document.getElementById('p-insight').innerHTML = '<span style="color:#8a7a63; animation:pulse 1.5s infinite;">Fetching AI analysis... (<span id="ai-timer">0</span>s)</span>';
                     let aiTimerSecs = 0;
                     const aiTimerInterval = setInterval(() => {

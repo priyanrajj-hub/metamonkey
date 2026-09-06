@@ -45,9 +45,40 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: "Missing prompt or contents payload" });
         }
 
-        // Use the explicit flash model per user instructions, or via Environment Variable override
-        const modelName = process.env.GEMINI_MODEL_NAME || "gemini-1.5-flash-latest";
-        const modelUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+        let targetModel = process.env.GEMINI_MODEL_NAME;
+
+        if (!targetModel) {
+            // Hit ListModels to find actual permitted models for this key
+            const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+            try {
+                const listRes = await fetch(listUrl);
+                if (listRes.ok) {
+                    const listData = await listRes.json();
+                    const validModels = listData.models.filter(m =>
+                        m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
+                    );
+
+                    // Prefer flash models, fallback to anything valid
+                    const bestModel = validModels.find(m => m.name.includes("flash")) || validModels[0];
+                    if (bestModel) {
+                        targetModel = bestModel.name; // e.g. "models/gemini-1.5-flash"
+                        console.log("Dynamically resolved model:", targetModel);
+                    }
+                }
+            } catch (e) {
+                console.error("ListModels fallback failed:", e);
+            }
+        }
+
+        // Fallback default if absolutely everything fails
+        if (!targetModel) targetModel = "models/gemini-1.5-flash";
+
+        // Sanitize model name if it doesn't start with "models/"
+        if (!targetModel.startsWith("models/")) {
+            targetModel = "models/" + targetModel;
+        }
+
+        const modelUrl = `https://generativelanguage.googleapis.com/v1beta/${targetModel}:generateContent?key=${apiKey}`;
 
         const response = await fetch(modelUrl, {
             method: 'POST',
@@ -66,7 +97,7 @@ module.exports = async (req, res) => {
                 if (parsed.error && parsed.error.message) errMsg = parsed.error.message;
             } catch (ignore) { }
             if (response.status === 404 && errMsg.includes("not found")) {
-                return res.status(404).json({ error: `Gemini model '${modelName}' is unavailable — check GEMINI_MODEL_NAME env var and available models. Upstream: ${errMsg}` });
+                return res.status(404).json({ error: `Gemini model '${targetModel}' is unavailable — check GEMINI_MODEL_NAME env var and available models. Upstream: ${errMsg}` });
             }
             return res.status(response.status).json({ error: "Upstream API Error: " + errMsg });
         }
