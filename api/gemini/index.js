@@ -45,8 +45,9 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: "Missing prompt or contents payload" });
         }
 
-        // Use the explicit flash model per user instructions
-        const modelUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // Use the explicit flash model per user instructions, or via Environment Variable override
+        const modelName = process.env.GEMINI_MODEL_NAME || "gemini-1.5-flash-latest";
+        const modelUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
         const response = await fetch(modelUrl, {
             method: 'POST',
@@ -64,6 +65,9 @@ module.exports = async (req, res) => {
                 const parsed = JSON.parse(errBody);
                 if (parsed.error && parsed.error.message) errMsg = parsed.error.message;
             } catch (ignore) { }
+            if (response.status === 404 && errMsg.includes("not found")) {
+                return res.status(404).json({ error: `Gemini model '${modelName}' is unavailable — check GEMINI_MODEL_NAME env var and available models. Upstream: ${errMsg}` });
+            }
             return res.status(response.status).json({ error: "Upstream API Error: " + errMsg });
         }
 
