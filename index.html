@@ -1177,7 +1177,7 @@
                         // SERVERLESS GEMINI FETCH (Secure Edge Endpoint)
                         let insight = "Diagnostic unavailable. Check server connection.";
                         const geminiPayload = {
-                            "contents": [{ "parts": [{ "text": `You are the Canopy AI Agricultural Analyst. I just scanned a farm polygon using OSINT proxies. The Mean NDVI is ${ndvi.toFixed(3)}. In exactly 2 plain-text sentences (no markdown, no HTML tags, no bold/italic formatting), give a professional vegetation health diagnosis for this NDVI value. State specifically whether the crop is healthy or stressed, and name the most likely risk factor. DO NOT use any markup or formatting characters.` }] }]
+                            "contents": [{ "parts": [{ "text": `You are the Canopy AI Agricultural Analyst. I just scanned a farm polygon using OSINT proxies. The Mean NDVI is ${ndvi.toFixed(3)}. Provide a professional vegetation diagnosis estimating 1) Crop health/stress severity, 2) The most likely dominant risk factor or pest risk based on the data, and 3) An estimated reasoning of general NPK soil health. Write exactly 2-3 concise plain-text sentences. DO NOT use markdown, HTML tags, or formatting characters.` }] }]
                         };
 
                         try {
@@ -1199,18 +1199,22 @@
                                 const gemData = await gemRes.json();
                                 console.log("[CANOPY AI INSIGHT] Successful response:", gemData);
                                 console.log("[CANOPY AI INSIGHT] RAW STRUCTURE:", JSON.stringify(gemData, null, 2));
+
                                 if (gemData && (gemData.text || gemData.candidates)) {
-                                    // Support both modern flattened payload (.text) and legacy array traversal (.candidates)
                                     insight = gemData.text ? gemData.text : gemData.candidates[0].content.parts[0].text;
                                     window._canopyDebug.geminiSuccess++;
-                                    // Strip any accidental HTML tags from LLM output
                                     insight = insight.replace(/<[^>]*>/g, '');
-                                    insight += ' <em style="font-size:11px; color:#8a7a63;">[Source: Gemini AI analysis]</em>';
+                                    insight += ' <em style="font-size:11px; color:#8a7a63;"><br/><br/>[Source: Gemini AI analysis. NPK/Pest levels are AI-estimated reasoning based on telemetry patterns and are NOT direct sensor measurements. Requires hardware validation.]</em>';
                                 } else if (gemData.error) {
                                     console.error("[CANOPY AI INSIGHT] API returned error block:", gemData.error);
                                     insight = "AI insight unavailable — " + (gemData.error.message || "Unknown API error");
                                     throw new Error(insight);
                                 } else {
+                                    const errMsg = "Cannot process response structure, expected 'text' parameter.";
+                                    console.error("[CANOPY AI INSIGHT] PARSING ERROR:", errMsg, "Raw data:", gemData);
+                                    throw new Error(errMsg);
+                                }
+                            } else {
                                     const errMsg = "Cannot process response structure, expected 'text' parameter.";
                                     console.error("[CANOPY AI INSIGHT] PARSING ERROR:", errMsg, "Raw data:", gemData);
                                     throw new Error(errMsg);
