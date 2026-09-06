@@ -40,39 +40,7 @@ module.exports = async (req, res) => {
 
         const ai = new GoogleGenAI({ apiKey: apiKey });
 
-        let targetModel = process.env.GEMINI_MODEL_NAME;
-
-        if (!targetModel) {
-            try {
-                const modelsResp = await ai.models.list();
-                let found36 = false;
-
-                // 1. Verify if gemini-3.6-flash exists in the allowed models list
-                for await (const m of (modelsResp.models || modelsResp)) {
-                    if (m.name.includes("gemini-3.6-flash")) {
-                        targetModel = m.name.replace('models/', '');
-                        found36 = true;
-                        console.log("Confirmed via ListModels: selected SDK model:", targetModel);
-                        break;
-                    }
-                }
-
-                // 2. If it's missing, fallback to any active flash model that is NOT 2.5
-                if (!found36) {
-                    for await (const m of (modelsResp.models || modelsResp)) {
-                        if (m.name.includes("flash") && !m.name.includes("2.5")) {
-                            targetModel = m.name.replace('models/', '');
-                            console.log("Dynamically selected alternative SDK model:", targetModel);
-                            break;
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error("SDK list models failed:", e);
-            }
-            if (!targetModel) targetModel = "gemini-3.6-flash";
-        }
-
+        let targetModel = process.env.GEMINI_MODEL_NAME || "gemini-3.6-flash";
         targetModel = targetModel.replace('models/', '');
 
         try {
