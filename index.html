@@ -1182,7 +1182,8 @@
 
                         try {
                             console.log("[CANOPY AI INSIGHT] Initiating Gemini API fetch...", geminiPayload);
-                            const controller = new AbortController();
+                            console.log("GEMINI_TIMEOUT_MS =", 35000);
+            const controller = new AbortController();
                             const fetchTimeout = setTimeout(() => controller.abort(), 35000); // 35 seconds
 
                             const gemRes = await fetch('/api/gemini', {
