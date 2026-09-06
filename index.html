@@ -1183,7 +1183,7 @@
                         try {
                             console.log("[CANOPY AI INSIGHT] Initiating Gemini API fetch...", geminiPayload);
                             console.log("GEMINI_TIMEOUT_MS =", 35000);
-            const controller = new AbortController();
+                            const controller = new AbortController();
                             const fetchTimeout = setTimeout(() => controller.abort(), 35000); // 35 seconds
 
                             const gemRes = await fetch('/api/gemini', {
@@ -1210,11 +1210,6 @@
                                     insight = "AI insight unavailable — " + (gemData.error.message || "Unknown API error");
                                     throw new Error(insight);
                                 } else {
-                                    const errMsg = "Cannot process response structure, expected 'text' parameter.";
-                                    console.error("[CANOPY AI INSIGHT] PARSING ERROR:", errMsg, "Raw data:", gemData);
-                                    throw new Error(errMsg);
-                                }
-                            } else {
                                     const errMsg = "Cannot process response structure, expected 'text' parameter.";
                                     console.error("[CANOPY AI INSIGHT] PARSING ERROR:", errMsg, "Raw data:", gemData);
                                     throw new Error(errMsg);
@@ -1451,6 +1446,7 @@
                         document.getElementById('p-badge-text').textContent = statusPhase.toUpperCase();
 
                         layer.setStyle({ fillColor: statusColor, color: statusColor, fillOpacity: 0.5 });
+                        console.log("SETTING_INSIGHT_TEXT =", insight);
                         document.getElementById('p-insight').innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(insight, { ALLOWED_TAGS: ['em', 'strong', 'span', 'br'], ALLOWED_ATTR: ['style'] }) : insight;
 
                         // Dynamic confidence scoring based on data completeness
