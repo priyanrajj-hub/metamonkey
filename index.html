@@ -865,7 +865,7 @@
             style="margin-top:12px; background:rgba(16,185,129,0.05); border:1px solid rgba(16,185,129,0.2); border-radius:8px; padding:12px; display:none;">
             <div
                 style="font-family:var(--sans); font-size:11px; font-weight:600; color:var(--leaf-300); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">
-                \u26a0 Early Warning Case Study
+                ⚠ Early Warning Case Study
             </div>
             <div id="case-study-text" style="font-family:var(--mono); font-size:11px; color:#bbb; line-height:1.5;">
             </div>
@@ -1183,7 +1183,7 @@
                         try {
                             console.log("[CANOPY AI INSIGHT] Initiating Gemini API fetch...", geminiPayload);
                             const controller = new AbortController();
-                            const fetchTimeout = setTimeout(() => controller.abort(), 12000); // 12 seconds
+                            const fetchTimeout = setTimeout(() => controller.abort(), 28000); // 12 seconds
 
                             const gemRes = await fetch('/api/gemini', {
                                 method: 'POST',
@@ -1205,7 +1205,7 @@
                                     insight += ' <em style="font-size:11px; color:#8a7a63;">[Source: Gemini AI analysis]</em>';
                                 } else if (gemData.error) {
                                     console.error("[CANOPY AI INSIGHT] API returned error block:", gemData.error);
-                                    insight = "AI insight unavailable \u2014 " + (gemData.error.message || "Unknown API error");
+                                    insight = "AI insight unavailable — " + (gemData.error.message || "Unknown API error");
                                     throw new Error(insight);
                                 }
                             } else {
@@ -1238,7 +1238,7 @@
                         let statusPhase = "healthy";
                         let statusColor = "#10b981";
                         if (ndvi < 0.15) { statusPhase = "critical \u2718"; statusColor = "#8f2d2d"; }
-                        else if (ndvi < 0.4) { statusPhase = "stressed \u26a0"; statusColor = "#b9542f"; }
+                        else if (ndvi < 0.4) { statusPhase = "stressed ⚠"; statusColor = "#b9542f"; }
 
                         const rawDate = new Date();
                         const sourceString = `${rawDate.toISOString().split('T')[0]} (OSM land-use + Open-Meteo)`;
@@ -1318,7 +1318,7 @@
                             // FUSION insight: cross-reference NDVI with rainfall
                             const fusionEl = document.getElementById('ndvi-rain-fusion');
                             if (ndvi < 0.4 && deficit > 20) {
-                                fusionEl.innerHTML = '\u26a0 <strong>Multi-signal alert:</strong> NDVI stress (' + ndvi.toFixed(3) + ') correlates with ' + deficit + '% rainfall deficit over 14 days — drought-induced stress likely.';
+                                fusionEl.innerHTML = '⚠ <strong>Multi-signal alert:</strong> NDVI stress (' + ndvi.toFixed(3) + ') correlates with ' + deficit + '% rainfall deficit over 14 days — drought-induced stress likely.';
                                 fusionEl.style.display = 'block';
                                 fusionEl.style.color = '#ef4444';
                             } else if (ndvi >= 0.5 && deficit < 10) {
@@ -1405,13 +1405,13 @@
                         let arrowText = '';
                         let arrowColor = '';
                         if (delta > 0.02) {
-                            deltaText = '\u25b2 +' + delta.toFixed(3) + ' improvement (greening trend)';
-                            arrowText = '\u2197'; arrowColor = '#10b981';
+                            deltaText = '▲ +' + delta.toFixed(3) + ' improvement (greening trend)';
+                            arrowText = '↗'; arrowColor = '#10b981';
                         } else if (delta < -0.02) {
                             deltaText = '\u25bc ' + delta.toFixed(3) + ' degradation (browning trend)';
                             arrowText = '\u2198'; arrowColor = '#ef4444';
                         } else {
-                            deltaText = '\u25cf \u0394' + delta.toFixed(3) + ' — stable (within noise threshold \u00b10.02)';
+                            deltaText = '● \u0394' + delta.toFixed(3) + ' — stable (within noise threshold \u00b10.02)';
                             arrowText = '\u2192'; arrowColor = '#eab308';
                         }
                         safetxt('ndvi-arrow', arrowText, arrowColor);
