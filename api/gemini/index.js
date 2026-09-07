@@ -4,7 +4,7 @@ const requestSpamMap = new Map();
 
 module.exports = async (req, res) => {
     try {
-        const apiKey = process.env.GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY || "AQ.Ab8RN6LsViOmcHJfz8-FpZxvT--qo81klJIp4yQoWwzyb4Gueg";
 
         if (!apiKey || apiKey === '' || (typeof apiKey === 'string' && apiKey.includes('YOUR_API_KEY'))) {
             return res.status(503).json({ error: "API Key missing! Please configure GEMINI_API_KEY in Vercel Deployment Settings." });
