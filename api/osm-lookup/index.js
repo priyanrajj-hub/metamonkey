@@ -11,7 +11,7 @@ module.exports = async function (req, res) {
         }
 
         const bbox = `${lat - 0.005},${lng - 0.005},${lat + 0.005},${lng + 0.005}`;
-        const overpassQuery = `https://overpass-api.de/api/interpreter?data=[out:json];node(${bbox})["landuse"];way(${bbox})["landuse"];out;`;
+        const overpassQuery = `https://overpass-api.de/api/interpreter?data=[out:json];(node(${bbox})["landuse"];way(${bbox})["landuse"];node(${bbox})["crop"];way(${bbox})["crop"];node(${bbox})["produce"];way(${bbox})["produce"];);out;`;
 
         const response = await fetch(overpassQuery, {
             headers: {

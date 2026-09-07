@@ -1383,12 +1383,35 @@
                         const elArea = document.getElementById('p-area');
                         if (elArea) elArea.textContent = areaHa > 0 ? areaHa + " ha" : "Point Estimate";
 
-                        let cropType = "Mixed Vegetation";
+                        let cropType = "Unknown Vegetation";
                         if (oData && oData.elements) {
-                            const tagStr = JSON.stringify(oData.elements).toLowerCase();
-                            if (tagStr.includes('orchard') || tagStr.includes('fruit')) cropType = "Tree Crop (e.g., Coconut/Mango)";
-                            else if (tagStr.includes('farm') || tagStr.includes('crop')) cropType = "Row Crop (e.g., Tomato/Chilli)";
-                            else if (tagStr.includes('grass')) cropType = "Pasture / Grassland";
+                            let specificCrop = null;
+                            for (let el of oData.elements) {
+                                if (el.tags) {
+                                    if (el.tags.crop) specificCrop = el.tags.crop;
+                                    else if (el.tags.produce) specificCrop = el.tags.produce;
+                                }
+                                if (specificCrop) break;
+                            }
+
+                            if (specificCrop) {
+                                cropType = specificCrop.charAt(0).toUpperCase() + specificCrop.slice(1) + " (OSM Confirmed)";
+                            } else {
+                                const tagStr = JSON.stringify(oData.elements).toLowerCase();
+                                if (tagStr.includes('orchard') || tagStr.includes('fruit')) {
+                                    cropType = "Tree Crop (Inferred)";
+                                } else if (tagStr.includes('farm') || tagStr.includes('crop')) {
+                                    // Geo-heuristic fallback for Indian subcontinent regions if specific crop is missing
+                                    if (centerLat > 25 && centerLat < 33 && centerLng > 72 && centerLng < 80) cropType = "Wheat / Paddy (Inferred Regional)";
+                                    else if (centerLat < 15 && centerLat > 8 && centerLng > 74 && centerLng < 81) cropType = "Rice Paddy / Sugarcane (Inferred Regional)";
+                                    else if (centerLat > 18 && centerLat < 24 && centerLng > 72 && centerLng < 80) cropType = "Cotton / Soybean (Inferred Regional)";
+                                    else cropType = "Mixed Row Crops (Untagged Farmland)";
+                                } else if (tagStr.includes('grass') || tagStr.includes('meadow') || tagStr.includes('pasture')) {
+                                    cropType = "Pasture / Grassland";
+                                } else {
+                                    cropType = "Mixed Vegetation (Inferred)";
+                                }
+                            }
                         }
                         const elCrop = document.getElementById('p-crop-type');
                         if (elCrop) elCrop.textContent = cropType;
