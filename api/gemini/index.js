@@ -43,33 +43,56 @@ module.exports = async (req, res) => {
         let targetModel = process.env.GEMINI_MODEL_NAME || "gemini-3.8-flash";
         targetModel = targetModel.replace('models/', '');
 
+        let apiUrl = "";
+        let rawResponse = null;
+        let rawText = "";
+
         try {
-            const response = await ai.models.generateContent({
-                model: targetModel,
-                contents: textPrompt
+            console.log("\n--- [GEMINI VERBOSE DEBUG START] ---");
+            apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`;
+
+            console.log(`[DEBUG] Exact request URL: ${apiUrl.replace(apiKey, 'REDACTED_API_KEY')}`);
+            console.log(`[DEBUG] Model Name: ${targetModel}`);
+            console.log(`[DEBUG] API Version: v1beta`);
+
+            rawResponse = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: textPrompt }] }] })
             });
 
-            // Modern SDK exposes response.text natively.
+            console.log(`[DEBUG] HTTP Status Code: ${rawResponse.status} ${rawResponse.statusText}`);
+
+            rawText = await rawResponse.text();
+            console.log(`[DEBUG] Full raw error/response body:\n`, rawText);
+            console.log("--- [GEMINI VERBOSE DEBUG END] ---\n");
+
+            if (!rawResponse.ok) {
+                throw new Error(`HTTP Error ${rawResponse.status}: ${rawText}`);
+            }
+
+            const jsonResponse = JSON.parse(rawText);
+
             let replyText = "";
-            if (response.text) {
-                replyText = response.text;
-            } else if (response.candidates && response.candidates[0]?.content?.parts?.[0]?.text) {
-                replyText = response.candidates[0].content.parts[0].text;
+            if (jsonResponse.candidates && jsonResponse.candidates[0]?.content?.parts?.[0]?.text) {
+                replyText = jsonResponse.candidates[0].content.parts[0].text;
             } else {
-                throw new Error("No text returned from Gemini API.");
+                throw new Error("No text returned from Gemini API. Body: " + JSON.stringify(jsonResponse));
             }
 
             return res.status(200).json({ text: replyText });
 
         } catch (apiError) {
-            console.error("SDK Execution Error (Gemini):", apiError?.status || apiError?.code || 'Unknown status', apiError);
+            console.error("SDK Execution Error (Gemini):", apiError);
             let errorType = "Unknown Error";
-            if (apiError.status === 404 || apiError.code === 404) errorType = "Model Deprecated/Not Found";
-            else if (apiError.status === 429 || apiError.code === 429) errorType = "Rate Limit Exceeded";
-            else if (apiError.status === 403 || apiError.code === 403 || apiError.status === 401 || apiError.code === 401) errorType = "Authentication/Permission Denied";
+            // Check message for HTTP errors
+            if (apiError.message && (apiError.message.includes("404") || apiError.message.includes("models/"))) errorType = "Model Deprecated/Not Found";
+            else if (apiError.message && apiError.message.includes("429")) errorType = "Rate Limit Exceeded";
+            else if (apiError.message && (apiError.message.includes("403") || apiError.message.includes("401"))) errorType = "Authentication/Permission Denied";
 
             return res.status(500).json({
-                error: `Gemini API Error [${errorType}] — Details: ` + (apiError.message || apiError)
+                error: `Gemini API Error [${errorType}] — Details: ` + (apiError.message || apiError),
+                debug_info: `\n\n--- [DEBUG START] ---\nURL: ${apiUrl ? apiUrl.replace(apiKey, 'REDACTED') : 'URL not reached'}\nModel: ${targetModel}\nHTTP Status: ${rawResponse && rawResponse.status ? rawResponse.status : 'Unknown'}\nRaw Response Body: ${rawText ? rawText : 'No body read'}\n--- [DEBUG END] ---`
             });
         }
 
