@@ -98,7 +98,6 @@ def infer_crop_type(tags, lat, lng, ndvi_history=None, geom_area=None):
             
     # Compile results
     if total_score == 0:
-        # Absolute fallback
         return {
             "best_guess": "Unknown Crop (Inferred)", 
             "confidence": 10.0, 
@@ -107,15 +106,29 @@ def infer_crop_type(tags, lat, lng, ndvi_history=None, geom_area=None):
 
     # Normalize scores and sort
     sorted_crops = sorted([(c, (s/total_score) * 100) for c, s in ranked_crops.items()], key=lambda x: x[1], reverse=True)
+    best_c, best_p = sorted_crops[0]
     
     # Cap confidence depending on data quality
     max_confidence_limit = 85.0 if has_ndvi else 65.0
-    
-    # Adjust best guess confidence
-    best_c, best_p = sorted_crops[0]
     final_conf = min(best_p, max_confidence_limit)
     
+    # Signal Logging via Vercel Stdout (Diagnostic)
+    print(f"[CROP INFERENCE DIAGNOSTICS] Location: {lat},{lng} | Area: {geom_area} | NDVI Available: {has_ndvi}")
+    if has_ndvi:
+        print(f"  > NDVI Stats -> Avg: {avg_ndvi:.3f}, Max: {max_ndvi:.3f}, Min: {min_ndvi:.3f}, Var: {variance:.3f}")
+    print(f"  > Geo Season: {season}")
+    print(f"  > Computed Baseline Probabilities: {ranked_crops}")
+    
     shortlist = [{"crop": c, "prob": round(p, 1)} for c, p in sorted_crops[:5]]
+
+    # Confidence Thresholding: If best probability is too low (< 45% or lacks strong single signal), drop to uncertain
+    if final_conf < 45.0:
+        print(f"  > Low confidence ({final_conf:.1f}%). Triggering Uncertainty Fallback.")
+        return {
+            "best_guess": "Uncertain — please confirm",
+            "confidence": round(final_conf, 1),
+            "shortlist": shortlist
+        }
 
     return {
         "best_guess": f"{best_c} (Inferred)",

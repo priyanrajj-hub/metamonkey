@@ -1427,7 +1427,7 @@
                                     cropTypeHTML = `
                                         <div style="display:flex; flex-direction:column; gap:4px;">
                                             <div><span id="inferred-crop-label" style="color:var(--leaf-300);">${inf.best_guess}</span> <span style="font-size:9px; color:#888;">(${inf.confidence}%)</span></div>
-                                            <select onchange="localStorage.setItem('${parcelKey}', this.value); document.getElementById('inferred-crop-label').textContent = this.value; this.style.display='none';" 
+                                            <select onchange="localStorage.setItem('${parcelKey}', this.value); document.getElementById('inferred-crop-label').textContent = this.value; this.style.display='none'; fetch('/api/crop_inference', { method: 'POST', body: JSON.stringify({ log_correction: true, crop: this.value, lat: ${centerLat}, lng: ${centerLng} }) });" 
                                                 style="background:transparent; color:#eab308; border:1px dashed #eab308; border-radius:3px; font-family:var(--mono); padding:2px; font-size:10px; cursor:pointer; max-width:180px;">
                                                 <option value="" disabled selected>Not sure? Correct it</option>
                                                 ${selectOptions}

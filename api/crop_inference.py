@@ -27,6 +27,19 @@ class handler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length).decode('utf-8')
             data = json.loads(post_data)
 
+            # Handle logging corrections
+            if data.get('log_correction') is True:
+                crop = data.get('crop', 'Unknown')
+                lat = data.get('lat', 0.0)
+                lng = data.get('lng', 0.0)
+                print(f"[CROP CORRECTION LOGGED] Location: {lat},{lng} | User Corrected To: {crop}")
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True}).encode('utf-8'))
+                return
+
             lat = float(data.get('lat', 0.0))
             lng = float(data.get('lng', 0.0))
             tags = data.get('tags', {})
