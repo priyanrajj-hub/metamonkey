@@ -47,13 +47,11 @@ module.exports = async (req, res) => {
         let rawResponse = null;
         let rawText = "";
 
-        try {
-            console.log("\n--- [GEMINI VERBOSE DEBUG START] ---");
-            apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`;
+        const generateWithFallback = async (modelName, isRetry = false) => {
+            const DEBUG = false;
 
-            console.log(`[DEBUG] Exact request URL: ${apiUrl.replace(apiKey, 'REDACTED_API_KEY')}`);
-            console.log(`[DEBUG] Model Name: ${targetModel}`);
-            console.log(`[DEBUG] API Version: v1beta`);
+            if (DEBUG) console.log(`\n--- [GEMINI VERBOSE DEBUG START] [${isRetry ? 'RETRY' : 'PRIMARY'}] ---`);
+            apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
             rawResponse = await fetch(apiUrl, {
                 method: 'POST',
@@ -61,38 +59,59 @@ module.exports = async (req, res) => {
                 body: JSON.stringify({ contents: [{ parts: [{ text: textPrompt }] }] })
             });
 
-            console.log(`[DEBUG] HTTP Status Code: ${rawResponse.status} ${rawResponse.statusText}`);
-
+            if (DEBUG) console.log(`[DEBUG] HTTP Status Code: ${rawResponse.status} ${rawResponse.statusText}`);
             rawText = await rawResponse.text();
-            console.log(`[DEBUG] Full raw error/response body:\n`, rawText);
-            console.log("--- [GEMINI VERBOSE DEBUG END] ---\n");
+            if (DEBUG) {
+                console.log(`[DEBUG] Exact request URL: ${apiUrl.replace(apiKey, 'REDACTED_API_KEY')}`);
+                console.log(`[DEBUG] Model Name: ${modelName}`);
+                console.log(`[DEBUG] Full raw body:\n`, rawText);
+                console.log("--- [GEMINI VERBOSE DEBUG END] ---\n");
+            }
 
             if (!rawResponse.ok) {
+                // If 503 overloaded and we haven't retried yet, throw a specific code to trigger fallback
+                if (rawResponse.status === 503 && !isRetry) {
+                    throw { type: 'OVERLOADED', message: rawText };
+                }
                 throw new Error(`HTTP Error ${rawResponse.status}: ${rawText}`);
             }
 
             const jsonResponse = JSON.parse(rawText);
 
-            let replyText = "";
             if (jsonResponse.candidates && jsonResponse.candidates[0]?.content?.parts?.[0]?.text) {
-                replyText = jsonResponse.candidates[0].content.parts[0].text;
+                return jsonResponse.candidates[0].content.parts[0].text;
             } else {
                 throw new Error("No text returned from Gemini API. Body: " + JSON.stringify(jsonResponse));
             }
+        };
 
+        try {
+            let replyText = "";
+            try {
+                // Try primary model
+                replyText = await generateWithFallback(targetModel, false);
+            } catch (err) {
+                if (err.type === 'OVERLOADED') {
+                    console.log(`[CANOPY AI INSIGHT] Model ${targetModel} overloaded (503). Falling back to gemini-1.5-flash...`);
+                    replyText = await generateWithFallback("gemini-1.5-flash", true);
+                } else {
+                    throw err; // Re-throw other errors
+                }
+            }
+
+            console.log("[CANOPY AI INSIGHT] Successful generation from Gemini API.");
             return res.status(200).json({ text: replyText });
 
         } catch (apiError) {
             console.error("SDK Execution Error (Gemini):", apiError);
             let errorType = "Unknown Error";
-            // Check message for HTTP errors
             if (apiError.message && (apiError.message.includes("404") || apiError.message.includes("models/"))) errorType = "Model Deprecated/Not Found";
             else if (apiError.message && apiError.message.includes("429")) errorType = "Rate Limit Exceeded";
             else if (apiError.message && (apiError.message.includes("403") || apiError.message.includes("401"))) errorType = "Authentication/Permission Denied";
+            else if (apiError.message && apiError.message.includes("503")) errorType = "AI Service Overloaded";
 
             return res.status(500).json({
-                error: `Gemini API Error [${errorType}] — Details: ` + (apiError.message || apiError),
-                debug_info: `\n\n--- [DEBUG START] ---\nURL: ${apiUrl ? apiUrl.replace(apiKey, 'REDACTED') : 'URL not reached'}\nModel: ${targetModel}\nHTTP Status: ${rawResponse && rawResponse.status ? rawResponse.status : 'Unknown'}\nRaw Response Body: ${rawText ? rawText : 'No body read'}\n--- [DEBUG END] ---`
+                error: `Gemini API Error [${errorType}] — Details: ` + (apiError.message || apiError)
             });
         }
 
