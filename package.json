@@ -23,6 +23,7 @@
   "homepage": "https://github.com/priyanrajj-hub/smart-plant-health-monitoring-using-solar-images#readme",
   "dependencies": {
     "@google/genai": "^2.21.0",
+    "dotenv": "^17.4.2",
     "node-fetch": "^3.3.2",
     "pg": "^8.23.0"
   }
