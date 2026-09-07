@@ -3,6 +3,14 @@
 [![Vercel Deploy](https://img.shields.io/badge/Vercel-Deployed-success)](https://smart-plant-health-monitoring-using-solar-images.vercel.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## 🎯 Primary Problem Statement Submissions (Amrita Hackathon 2026)
+
+| Submission Type | Link |
+| --- | --- |
+| **PPT / Presentation URL** | [View Presentation](https://docs.google.com/presentation/d/1Htup8PUzzYeM0IX-Wl52YjXrNSTRKlR9/edit?usp=sharing&ouid=105082477249442102097&rtpof=true&sd=true) |
+| **GitHub Repository URL** | [View Repository](https://github.com/priyanrajj-hub/METAMONKEY) |
+| **Video / Demo URL** | [Watch Demo](https://youtu.be/JkzA7kqbycA?si=TnteiABZq59kzly5) |
+
 *Companion Hardware Research Repo:* [Review-2 Repository (Microwave Dielectric Leaf Sensing)](https://github.com/priyanrajj-hub/review2)
 
 Canopy is a browser-based vegetation monitoring dashboard that combines OpenStreetMap land-use classification with real-time weather data to estimate crop health indicators.
