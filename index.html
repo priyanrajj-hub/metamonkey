@@ -1387,40 +1387,59 @@
                         if (elArea) elArea.textContent = areaHa > 0 ? areaHa + " ha" : "Point Estimate";
 
                         let cropTypeHTML = "Unknown Vegetation";
-                        if (oData && oData.elements) {
-                            let specificCrop = null;
-                            for (let el of oData.elements) {
-                                if (el.tags) {
-                                    if (el.tags.crop) specificCrop = el.tags.crop;
-                                    else if (el.tags.produce) specificCrop = el.tags.produce;
-                                }
-                                if (specificCrop) break;
+
+                        // Load saved override if exists
+                        const parcelKey = `crop_${centerLat.toFixed(4)}_${centerLng.toFixed(4)}`;
+                        const savedCrop = localStorage.getItem(parcelKey);
+
+                        if (savedCrop) {
+                            cropTypeHTML = savedCrop + " (Saved Override)";
+                        } else {
+                            // Extract OSM tags flat
+                            let allTags = {};
+                            if (oData && oData.elements) {
+                                oData.elements.forEach(el => {
+                                    if (el.tags) { allTags = { ...allTags, ...el.tags }; }
+                                });
                             }
 
-                            if (specificCrop) {
-                                cropTypeHTML = specificCrop.charAt(0).toUpperCase() + specificCrop.slice(1) + " (OSM Confirmed)";
-                            } else {
-                                // Manual Override Dropdown
-                                let inferred = "";
-                                const tagStr = JSON.stringify(oData.elements).toLowerCase();
-                                if (tagStr.includes('orchard') || tagStr.includes('fruit')) inferred = "Tree Crop";
-                                else if (tagStr.includes('farm') || tagStr.includes('crop')) inferred = "Row Crop";
-                                else if (tagStr.includes('grass')) inferred = "Pasture / Grassland";
-                                else inferred = "Mixed Vegetation";
+                            // Mock phenology history for the inference model since we lack historical satellite access in this proxy mode
+                            let mock_ndvi_history = [0.3, 0.4, 0.6, 0.7, 0.6, 0.5];
+                            if (ndvi > 0.6) mock_ndvi_history = [0.6, 0.65, 0.7, 0.72, 0.7, 0.68]; // Sugarcane / dense
+                            else if (ndvi < 0.2) mock_ndvi_history = [-0.1, 0.1, 0.2, 0.1, 0.1, 0.15]; // Flooded/bare
 
-                                cropTypeHTML = `
-                                    <select onchange="this.style.color='#a3d9a5'; this.style.borderColor='transparent';" style="background:transparent; color:#eab308; border:1px dashed #eab308; border-radius:3px; font-family:var(--mono); padding:2px; font-size:11px; cursor:pointer; max-width:140px;">
-                                        <option value="" disabled selected>Confirm Crop... (${inferred})</option>
-                                        <option value="wheat">Wheat</option>
-                                        <option value="paddy">Rice Paddy</option>
-                                        <option value="sugarcane">Sugarcane</option>
-                                        <option value="cotton">Cotton</option>
-                                        <option value="soybean">Soybean</option>
-                                        <option value="maize">Maize / Corn</option>
-                                        <option value="vegetables">Mixed Vegetables</option>
-                                        <option value="orchard">Orchard / Fruit Trees</option>
-                                    </select>
-                                `;
+                            // Fetch from our new Python API
+                            document.getElementById('p-crop-type').innerHTML = '<span class="loading-skeleton" style="width:70px;height:12px;display:inline-block;"></span>';
+
+                            try {
+                                const infRes = await fetch('/api/crop_inference', {
+                                    method: 'POST',
+                                    body: JSON.stringify({
+                                        lat: centerLat, lng: centerLng,
+                                        tags: allTags, ndvi_history: mock_ndvi_history, area: areaHa
+                                    })
+                                });
+                                const inf = await infRes.json();
+
+                                if (inf.best_guess) {
+                                    let selectOptions = inf.shortlist ? inf.shortlist.map(c => `<option value="${c.crop}">${c.crop} - ${c.prob}%</option>`).join('') : '';
+
+                                    cropTypeHTML = `
+                                        <div style="display:flex; flex-direction:column; gap:4px;">
+                                            <div><span id="inferred-crop-label" style="color:var(--leaf-300);">${inf.best_guess}</span> <span style="font-size:9px; color:#888;">(${inf.confidence}%)</span></div>
+                                            <select onchange="localStorage.setItem('${parcelKey}', this.value); document.getElementById('inferred-crop-label').textContent = this.value; this.style.display='none';" 
+                                                style="background:transparent; color:#eab308; border:1px dashed #eab308; border-radius:3px; font-family:var(--mono); padding:2px; font-size:10px; cursor:pointer; max-width:180px;">
+                                                <option value="" disabled selected>Not sure? Correct it</option>
+                                                ${selectOptions}
+                                            </select>
+                                        </div>
+                                    `;
+                                } else {
+                                    cropTypeHTML = "Inference Error";
+                                }
+                            } catch (e) {
+                                console.error("Crop Inference API error:", e);
+                                cropTypeHTML = "Inference Failed";
                             }
                         }
                         const elCrop = document.getElementById('p-crop-type');
