@@ -9,11 +9,11 @@
     <title>Canopy — Global Vegetation Health Monitor</title>
 
     <!-- Globe.gl (bundles Three.js internally — no separate Three.js import needed) -->
-    <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.32.1/dist/globe.gl.min.js"></script>
+    <script src="vendor/globe.gl.min.js"></script>
 
     <!-- Intercept and suppress specific Three.js globe.gl deprecation warning -->
     <script>
-        document.addEventListener("webglcontextlost", function(e) {
+        document.addEventListener("webglcontextlost", function (e) {
             e.preventDefault();
             console.error("WebGL Context Lost triggered document-wide.");
             let globeContainer = document.getElementById('panorama');
@@ -23,7 +23,7 @@
             marker.innerHTML = "<strong>[WARNING] 3D Renderer Context Lost!</strong><br><br>GPU memory exhausted. This is normal over extended telemetry monitoring.<br>Please hard-refresh (Ctrl+F5) to restart the visualization pipeline.";
             document.body.appendChild(marker);
         }, true);
-        
+
         const originalWarn = console.warn;
         console.warn = function (...args) {
             if (args[0] && typeof args[0] === 'string' && args[0].includes('.useLegacyLights')) return;
@@ -55,13 +55,13 @@
             if (errDiv) errDiv.innerHTML = `Data request failed — please check connection.<br><button onclick="window.location.reload()" style="margin-top:12px; padding:6px 12px; background:var(--stress-500); color:white; font-family:var(--mono); border:none; border-radius:4px; cursor:pointer;">RETRY</button>`;
         });
     </script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <link rel="stylesheet" href="vendor/leaflet.css" />
+    <script src="vendor/leaflet.js"></script>
+    <link rel="stylesheet" href="vendor/leaflet.draw.css" />
+    <script src="vendor/leaflet.draw.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <script src="vendor/chart.js"></script>
+    <script src="vendor/purify.min.js"></script>
 
 
 
@@ -1188,7 +1188,9 @@
                         // SERVERLESS GEMINI FETCH (Secure Edge Endpoint)
                         let insight = "Diagnostic unavailable. Check server connection.";
                         const geminiPayload = {
-                            "contents": [{ "parts": [{ "text": `You are the Canopy AI Agricultural Analyst. I just scanned a farm polygon using OSINT proxies. The Mean NDVI is ${ndvi.toFixed(3)}. Return your analysis STRICTLY as a JSON object with the following exact keys, and DO NOT wrap it in markdown code blocks:
+                            "contents": [{
+                                "parts": [{
+                                    "text": `You are the Canopy AI Agricultural Analyst. I just scanned a farm polygon using OSINT proxies. The Mean NDVI is ${ndvi.toFixed(3)}. Return your analysis STRICTLY as a JSON object with the following exact keys, and DO NOT wrap it in markdown code blocks:
 {
   "summary": "one sentence overview of overall crop canopy health",
   "stress_severity": "Low | Moderate | High | Critical",
@@ -1198,7 +1200,8 @@
   "irrigation_recommendation": "estimated water need based on current NDVI, rainfall deficit, and temperature — e.g. 'irrigate within 2-3 days' or 'no immediate action needed'",
   "climate_risk_flag": "flag drought/heat-wave/flood risk specifically if current weather data (temperature, rainfall deficit, humidity) crosses recognizable thresholds",
   "confidence_caveat": "AI-estimated reasoning based on satellite/weather telemetry, not direct sensor or lab measurement — requires ground validation"
-}` }] }]
+}` }]
+                            }]
                         };
 
                         try {
@@ -1224,11 +1227,11 @@
                                 if (gemData && (gemData.text || gemData.candidates)) {
                                     let rawString = gemData.text ? gemData.text : gemData.candidates[0].content.parts[0].text;
                                     window._canopyDebug.geminiSuccess++;
-                                    
+
                                     try {
                                         let cleanStr = rawString.replace(/^```(json)?/, '').replace(/```$/, '').trim();
                                         const j = JSON.parse(cleanStr);
-                                        
+
                                         insight = `
                                             <div style="margin-bottom:12px; line-height:1.4;">${j.summary}</div>
                                             
@@ -1289,7 +1292,7 @@
                                             </div>
                                         `;
                                         console.log("SETTING_INSIGHT_TEXT =", "JSON Structure Parse Success!");
-                                    } catch(parseErr) {
+                                    } catch (parseErr) {
                                         console.error("[CANOPY AI INSIGHT] JSON Parse Error. Falling back to prose:", parseErr);
                                         insight = rawString.replace(/<[^>]*>/g, '') + '<br><br><span style="font-size:10px; color:#8a7a63;">[AI Estimate - Failed to parse structured JSON]</span>';
                                         console.log("SETTING_INSIGHT_TEXT =", insight);
