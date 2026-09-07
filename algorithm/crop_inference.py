@@ -8,7 +8,23 @@ def infer_crop_type(tags, lat, lng, ndvi_history=None, geom_area=None):
     
     Returns a dict with: 'best_guess' (string), 'confidence' (float), and 'shortlist' (list of dicts).
     """
-    # 1. OSM Tags (Highest Priority)
+    # 1. Non-Agricultural Check (Highest Priority)
+    if tags:
+        # Check for non-crop OSM tags
+        landuse = tags.get('landuse', '').lower()
+        natural = tags.get('natural', '').lower()
+        building = tags.get('building', '')
+        
+        if landuse in ['residential', 'commercial', 'industrial', 'retail'] or \
+           natural in ['wood', 'tree', 'scrub', 'water'] or \
+           tags.get('leisure') == 'park' or building:
+            return {
+                "best_guess": "Non-Agricultural / Mixed Vegetation (Not cropland)",
+                "confidence": 100.0,
+                "shortlist": []
+            }
+
+    # 2. OSM Crop Tags
     if tags:
         explicit_crop = tags.get('crop') or tags.get('produce')
         if explicit_crop:
