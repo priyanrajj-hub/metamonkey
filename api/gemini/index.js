@@ -40,7 +40,7 @@ module.exports = async (req, res) => {
 
         const ai = new GoogleGenAI({ apiKey: apiKey });
 
-        let targetModel = process.env.GEMINI_MODEL_NAME || "gemini-3.6-flash";
+        let targetModel = process.env.GEMINI_MODEL_NAME || "gemini-1.5-flash";
         targetModel = targetModel.replace('models/', '');
 
         try {

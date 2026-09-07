@@ -58,5 +58,18 @@ def get_fields():
         })
     return {"fields": fields, "data_source": "STATIC_SAMPLE (No Live API Credentials)"}
 
+from algorithm.crop_inference import infer_crop_type
+
+class CropRequest(BaseModel):
+    tags: dict
+    lat: float
+    lng: float
+    
+@app.post("/api/crop-inference")
+def compute_crop_inference(req: CropRequest):
+    result = infer_crop_type(req.tags, req.lat, req.lng)
+    prov = "OSM Explicit Tag" if any("OSM" in k for k in result.keys()) else "Inferred from Geo-Heuristics"
+    return {"ranked_crops": result, "provenance": prov}
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

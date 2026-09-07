@@ -11,14 +11,12 @@ Canopy is a browser-based vegetation monitoring dashboard that combines OpenStre
 
 | Feature | Data Source | Status |
 | --------- | ----------- | -------- |
-| **NDVI Value** | OSM land-use tags via Overpass API | **Proxy** — not satellite multispectral. Maps `farmland`→0.72, `building`→0.12, etc. |
-| **Temperature, Humidity, UV** | Open-Meteo Forecast API | **Live** — real data for polygon centroid |
-| **14-day Rainfall** | Open-Meteo Forecast API | **Live** — real precipitation history |
-| **Rainfall Baseline** | Open-Meteo Archive API (same window last year) | **Live** — real location-specific norm |
-| **Pest Risk / Irrigation** | Rule engine on live weather + proxy NDVI | **Heuristic** — thresholds not validated against pest incidence data |
-| **Temporal Δ Change** | Deterministic coord-hash offset | **Simulated** — requires Sentinel Hub API for real time series |
-| **AI Narrative** | Gemini 1.5 Flash (via `/api/gemini`) | **Live** when configured. |
-| **7-day NDVI Trend** | Simulated walk from current proxy NDVI | **Simulated** — no historical NDVI data source |
+| **NDVI Spectral Base** | Sentinel-2 L2A via CDSE API | **Pending User Credentials** — gracefully falls back to OSINT/RGB proxy array when CDSE OAuth is uninitialized or masked by clouds. |
+| **Multi-Modal Fusion** | MOONLIGHT Decision Engine | **Live Execution** — Fuses satellite NDVI slope dynamically with simulated acoustics/capacitive inputs on the backend. |
+| **Crop Inference** | OSM Specific Tags + Geo-Heuristics | **Live** — Queries OpenStreetMap for exact crop, with strict fallback to coordinate-bounded planting schedules (Kharif/Rabi). |
+| **Weather Telemetry** | Open-Meteo Historic + Live | **Live** — Live macro-environmental tracking for localized polygons. |
+| **Acoustic Pest / Capacitive / NPK Limits** | Node Simulation | **Hardware Disabled** — The software fusion engine is mathematical and live, but ground IoT parameters are fed via test vectors for web demonstration purposes. |
+| **AI Narrative** | Gemini 1.5 Flash structured JSON | **Live** |
 
 ### What Would Make NDVI Real?
 
