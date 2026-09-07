@@ -15,7 +15,7 @@
     <script>
         document.addEventListener("webglcontextlost", function (e) {
             e.preventDefault();
-            console.error("WebGL Context Lost triggered document-wide.");
+            console.warn("WebGL Context Lost handled document-wide. UI marker displayed.");
             let globeContainer = document.getElementById('panorama');
             if (!globeContainer) globeContainer = document.body;
             const marker = document.createElement("div");
