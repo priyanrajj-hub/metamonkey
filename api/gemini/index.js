@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
             const DEBUG = false;
 
             if (DEBUG) console.log(`\n--- [GEMINI VERBOSE DEBUG START] [${isRetry ? 'RETRY' : 'PRIMARY'}] ---`);
-            apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+            apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
 
             rawResponse = await fetch(apiUrl, {
                 method: 'POST',
@@ -92,8 +92,8 @@ module.exports = async (req, res) => {
                 replyText = await generateWithFallback(targetModel, false);
             } catch (err) {
                 if (err.type === 'OVERLOADED') {
-                    console.log(`[CANOPY AI INSIGHT] Model ${targetModel} overloaded (503). Falling back to gemini-1.5-flash-latest...`);
-                    replyText = await generateWithFallback("gemini-1.5-flash-latest", true);
+                    console.log(`[CANOPY AI INSIGHT] Model ${targetModel} overloaded (503). Falling back to gemini-3.5-flash...`);
+                    replyText = await generateWithFallback("gemini-3.5-flash", true);
                 } else {
                     throw err; // Re-throw other errors
                 }
