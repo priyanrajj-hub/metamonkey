@@ -14,20 +14,33 @@ module.exports = async function (req, res) {
         const queryData = `[out:json];(node(${bbox})["landuse"];way(${bbox})["landuse"];node(${bbox})["crop"];way(${bbox})["crop"];node(${bbox})["produce"];way(${bbox})["produce"];);out;`;
         const overpassQuery = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(queryData)}`;
 
-        const response = await fetch(overpassQuery, {
+        const fetchWithRetry = async (url, options, retries = 1, timeoutMs = 8000) => {
+            for (let i = 0; i <= retries; i++) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+                try {
+                    const response = await fetch(url, { ...options, signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    if (!response.ok) throw new Error(`Overpass API responded with status: ${response.status}`);
+                    return await response.json();
+                } catch (err) {
+                    clearTimeout(timeoutId);
+                    if (i === retries) throw err;
+                    console.warn(`[OSM Lookup] Attempt ${i + 1} failed, retrying...`, err.message);
+                }
+            }
+        };
+
+        const data = await fetchWithRetry(overpassQuery, {
             headers: {
                 'User-Agent': 'SmartPlantHealthMonitoring/1.0 (Research Hackathon SIH26180)'
             }
         });
 
-        if (!response.ok) {
-            throw new Error(`Overpass API responded with status: ${response.status}`);
-        }
-
-        const data = await response.json();
         return res.status(200).json(data);
     } catch (err) {
         console.error("OSM Lookup Proxy Error:", err);
-        return res.status(502).json({ error: 'Upstream Overpass API failure', details: err.message });
+        // Clean fallback response instead of 502 per Fix 3
+        return res.status(200).json({ elements: [], fallback_triggered: true });
     }
 };

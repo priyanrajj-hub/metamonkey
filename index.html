@@ -1312,7 +1312,8 @@
                                 throw new Error(`Server returned HTTP ${gemRes.status}`);
                             }
                         } catch (e) {
-                            console.warn("[CANOPY AI INSIGHT] Fallback triggered. Reason:", e.name === 'AbortError' ? 'Fetch timeout after 35s' : e.message);
+                            const isTimeout = e.name === 'AbortError';
+                            console.warn("[CANOPY AI INSIGHT] Fallback triggered. Reason:", isTimeout ? 'Fetch timeout after 35s' : e.message);
                             window._canopyDebug.geminiFallback++;
 
                             // Use the locally computed ndvi (never null at this point)
@@ -1325,8 +1326,10 @@
                             else if (ndvi >= 0.2) healthVerdict = "showing signs of stress — sparse canopy detected";
                             else healthVerdict = "critically low — possible bare soil or severe degradation";
 
-                            insight = `AI insight unavailable (Timeout/Error). Showing rule-based data only: Computed NDVI of ${safeNdvi} indicates vegetation health is ${healthVerdict}. ` +
-                                `<em style="font-size:11px; color:#8a7a63;">[Source: Fallback logic]</em>`;
+                            const sourceStr = isTimeout ? "Fallback logic — timeout" : "Fallback logic — AI service error";
+
+                            insight = `AI insight unavailable. Showing rule-based data only: Computed NDVI of ${safeNdvi} indicates vegetation health is ${healthVerdict}. ` +
+                                `<em style="font-size:11px; color:#8a7a63;">[Source: ${sourceStr}]</em>`;
 
                             document.getElementById('p-error').textContent = '';
                         }

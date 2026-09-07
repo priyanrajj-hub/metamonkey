@@ -40,7 +40,7 @@ module.exports = async (req, res) => {
 
         const ai = new GoogleGenAI({ apiKey: apiKey });
 
-        let targetModel = process.env.GEMINI_MODEL_NAME || "gemini-1.5-flash";
+        let targetModel = process.env.GEMINI_MODEL_NAME || "gemini-3.8-flash";
         targetModel = targetModel.replace('models/', '');
 
         try {
@@ -62,9 +62,14 @@ module.exports = async (req, res) => {
             return res.status(200).json({ text: replyText });
 
         } catch (apiError) {
-            console.error("SDK Execution Error:", apiError);
+            console.error("SDK Execution Error (Gemini):", apiError?.status || apiError?.code || 'Unknown status', apiError);
+            let errorType = "Unknown Error";
+            if (apiError.status === 404 || apiError.code === 404) errorType = "Model Deprecated/Not Found";
+            else if (apiError.status === 429 || apiError.code === 429) errorType = "Rate Limit Exceeded";
+            else if (apiError.status === 403 || apiError.code === 403 || apiError.status === 401 || apiError.code === 401) errorType = "Authentication/Permission Denied";
+
             return res.status(500).json({
-                error: "Gemini API model/endpoint deprecated — check Google's current API docs for the latest supported integration method. Details: " + (apiError.message || apiError)
+                error: `Gemini API Error [${errorType}] — Details: ` + (apiError.message || apiError)
             });
         }
 
