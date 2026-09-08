@@ -1308,8 +1308,20 @@
                                 }
                             } else {
                                 const errText = await gemRes.text();
-                                console.error(`[CANOPY AI INSIGHT] HTTP Error ${gemRes.status}:`, errText);
-                                throw new Error(`Server returned HTTP ${gemRes.status}`);
+                                let explicitErrorMsg = `Server returned HTTP ${gemRes.status}`;
+                                try {
+                                    const errJson = JSON.parse(errText);
+                                    if (errJson.message && errJson.message.includes('API_KEY_SERVICE_BLOCKED')) {
+                                        explicitErrorMsg = "Gemini API Blocked! Go to Google Cloud Console > APIs & Services > Credentials, edit your API key, and check 'Generative Language API'.";
+                                        console.error(`[CANOPY] 🛑 ACTION REQUIRED: ${explicitErrorMsg}`);
+                                    } else {
+                                        explicitErrorMsg = errJson.error || explicitErrorMsg;
+                                        console.error(`[CANOPY AI INSIGHT] Server Error:`, errJson);
+                                    }
+                                } catch (e) {
+                                    console.error(`[CANOPY AI INSIGHT] HTTP Error ${gemRes.status}:`, errText);
+                                }
+                                throw new Error(explicitErrorMsg);
                             }
                         } catch (e) {
                             const isTimeout = e.name === 'AbortError';
