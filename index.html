@@ -1424,14 +1424,25 @@
                                 if (inf.best_guess) {
                                     let selectOptions = inf.shortlist ? inf.shortlist.map(c => `<option value="${c.crop}">${c.crop} - ${c.prob}%</option>`).join('') : '';
 
+                                    let lowConfidence = inf.confidence < 60;
+                                    let customInputDisplay = lowConfidence ? 'flex' : 'none';
+                                    let dropdownDisplay = lowConfidence ? 'none' : 'block';
+
                                     cropTypeHTML = `
                                         <div style="display:flex; flex-direction:column; gap:4px;">
                                             <div><span id="inferred-crop-label" style="color:var(--leaf-300);">${inf.best_guess}</span> <span style="font-size:9px; color:#888;">(${inf.confidence}%)</span></div>
-                                            <select onchange="localStorage.setItem('${parcelKey}', this.value); document.getElementById('inferred-crop-label').textContent = this.value; this.style.display='none'; fetch('/api/crop_inference', { method: 'POST', body: JSON.stringify({ log_correction: true, crop: this.value, lat: ${centerLat}, lng: ${centerLng} }) });" 
-                                                style="background:transparent; color:#eab308; border:1px dashed #eab308; border-radius:3px; font-family:var(--mono); padding:2px; font-size:10px; cursor:pointer; max-width:180px;">
+                                            
+                                            <select onchange="if(this.value === '___OTHER___') { document.getElementById('custom-crop-container').style.display = 'flex'; this.style.display = 'none'; } else { localStorage.setItem('${parcelKey}', this.value); document.getElementById('inferred-crop-label').textContent = this.value + ' (user-confirmed)'; this.style.display='none'; fetch('/api/crop_inference', { method: 'POST', body: JSON.stringify({ log_correction: true, crop: this.value, lat: ${centerLat}, lng: ${centerLng} }) }); }" 
+                                                style="background:transparent; color:#eab308; border:1px dashed #eab308; border-radius:3px; font-family:var(--mono); padding:2px; font-size:10px; cursor:pointer; max-width:180px; display:${dropdownDisplay};">
                                                 <option value="" disabled selected>Not sure? Correct it</option>
                                                 ${selectOptions}
+                                                <option value="___OTHER___">Other (Manual Entry)</option>
                                             </select>
+                                            
+                                            <div id="custom-crop-container" style="display:${customInputDisplay}; flex-direction:row; gap:4px;">
+                                                <input type="text" id="custom-crop-input" placeholder="Enter crop or tree name" style="background:rgba(0,0,0,0.4); color:white; border:1px solid #aaa; border-radius:3px; padding:4px 6px; font-family:var(--sans); font-size:11px; outline:none; max-width:140px;" />
+                                                <button onclick="const v = document.getElementById('custom-crop-input').value; if(v) { localStorage.setItem('${parcelKey}', v); document.getElementById('inferred-crop-label').textContent = v + ' (user-confirmed)'; document.getElementById('custom-crop-container').style.display='none'; fetch('/api/crop_inference', { method: 'POST', body: JSON.stringify({ log_correction: true, crop: v, manual: true, lat: ${centerLat}, lng: ${centerLng} }) }); }" style="background:var(--leaf-300); color:black; border:none; border-radius:3px; padding:4px 8px; font-size:11px; cursor:pointer;">Save</button>
+                                            </div>
                                         </div>
                                     `;
                                 } else {

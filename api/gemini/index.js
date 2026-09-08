@@ -4,9 +4,10 @@ const requestSpamMap = new Map();
 
 module.exports = async (req, res) => {
     try {
-        const apiKey = process.env.GEMINI_API_KEY || "AQ.Ab8RN6LsViOmcHJfz8-FpZxvT--qo81klJIp4yQoWwzyb4Gueg";
+        const apiKey = process.env.GEMINI_API_KEY || "";
 
-        if (!apiKey || apiKey === '' || (typeof apiKey === 'string' && apiKey.includes('YOUR_API_KEY'))) {
+        if (!apiKey || apiKey === '' || apiKey.includes('YOUR_API_KEY')) {
+            console.warn("[CANOPY SERVER] WARNING: GEMINI_API_KEY is undefined or empty. AI insights will silently fail or fallback.");
             return res.status(503).json({ error: "API Key missing! Please configure GEMINI_API_KEY in Vercel Deployment Settings." });
         }
 
@@ -40,7 +41,7 @@ module.exports = async (req, res) => {
 
         const ai = new GoogleGenAI({ apiKey: apiKey });
 
-        let targetModel = process.env.GEMINI_MODEL_NAME || "gemini-3.8-flash";
+        let targetModel = process.env.GEMINI_MODEL_NAME || "gemini-1.5-flash";
         targetModel = targetModel.replace('models/', '');
 
         let apiUrl = "";
@@ -51,11 +52,17 @@ module.exports = async (req, res) => {
             const DEBUG = false;
 
             if (DEBUG) console.log(`\n--- [GEMINI VERBOSE DEBUG START] [${isRetry ? 'RETRY' : 'PRIMARY'}] ---`);
-            apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
+            const isOAuth = !apiKey.startsWith('AIza');
+            apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent` + (isOAuth ? "" : `?key=${apiKey}`);
+
+            const headers = { 'Content-Type': 'application/json' };
+            if (isOAuth) {
+                headers['Authorization'] = `Bearer ${apiKey}`;
+            }
 
             rawResponse = await fetch(apiUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({ contents: [{ parts: [{ text: textPrompt }] }] })
             });
 
@@ -105,13 +112,25 @@ module.exports = async (req, res) => {
         } catch (apiError) {
             console.error("SDK Execution Error (Gemini):", apiError);
             let errorType = "Unknown Error";
-            if (apiError.message && (apiError.message.includes("404") || apiError.message.includes("models/"))) errorType = "Model Deprecated/Not Found";
-            else if (apiError.message && apiError.message.includes("429")) errorType = "Rate Limit Exceeded";
-            else if (apiError.message && (apiError.message.includes("403") || apiError.message.includes("401"))) errorType = "Authentication/Permission Denied";
-            else if (apiError.message && apiError.message.includes("503")) errorType = "AI Service Overloaded";
+            let statusCode = 500;
+            let rawDetails = apiError.message || String(apiError);
 
-            return res.status(500).json({
-                error: `Gemini API Error [${errorType}] — Details: ` + (apiError.message || apiError)
+            if (apiError.message) {
+                if (apiError.message.includes("404") || apiError.message.includes("models/")) errorType = "Model Deprecated/Not Found";
+                else if (apiError.message.includes("429")) { errorType = "Rate Limit Exceeded"; statusCode = 429; }
+                else if (apiError.message.includes("403") || apiError.message.includes("401")) { errorType = "Authentication/Permission Denied"; statusCode = 401; }
+                else if (apiError.message.includes("503")) { errorType = "AI Service Overloaded"; statusCode = 503; }
+
+                let match = apiError.message.match(/HTTP Error (\d+):/);
+                if (match) statusCode = parseInt(match[1], 10);
+            }
+
+            console.error(`[CANOPY SERVER] Gemini Request Failed. Status: ${statusCode}, Type: ${errorType}, Raw Details: ${rawDetails}`);
+
+            return res.status(statusCode).json({
+                error: `Gemini API Error [${errorType}]`,
+                message: rawDetails,
+                status: statusCode
             });
         }
 
